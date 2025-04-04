@@ -24,7 +24,7 @@ Pygame AI RPG es un juego de rol por turnos donde controlas a un Brujo y una Cur
 
 1. Clona el repositorio:
 ```bash
-git clone https://github.com/tuusuario/pygame-ai-game.git
+git clone https://github.com/DarkChris11/tavern-ai-game
 cd pygame-ai-game
 ```
 
