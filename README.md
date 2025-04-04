@@ -122,7 +122,6 @@ Modifica enemies.py para añadir nuevos tipos de enemigos con sus propios ataque
 ## Créditos
 - Desarrollado con Pygame
 - Integración con la API de ChatGPT de OpenAI
-- Assets y gráficos: [Fuentes de los gráficos]
 
 ## Licencia
 Este proyecto está bajo la licencia MIT.
