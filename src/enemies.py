@@ -283,3 +283,66 @@ def create_enemies_for_tutorial():
         print(f"Error asignando imágenes a enemigos: {e}")
 
     return enemies
+
+
+def create_boss(player):
+    """Crea el jefe final, adaptado al nivel del jugador"""
+    # Calcular estadísticas basadas en el jugador (para equilibrar dificultad)
+    boss_health = max(200, player.max_health * 2)
+
+    # Crear el jefe con ataques poderosos
+    boss = Character(
+        name="Señor del Caos",
+        health=boss_health,
+        max_health=boss_health,
+        attacks={
+            "Espada Vorpal": {
+                "dice": 2,
+                "sides": 10,
+                "type": "physical",
+                "effect": "sangrado",
+            },
+            "Nova Oscura": {"dice": 3, "sides": 8, "type": "magic"},
+            "Grito Debilitador": {
+                "dice": 1,
+                "sides": 6,
+                "type": "magic",
+                "effect": "debilitar",
+            },
+            "Tormenta de Hielo": {
+                "dice": 2,
+                "sides": 12,
+                "type": "magic",
+                "effect": "congelado",
+            },
+            "Explosión Infernal": {
+                "dice": 4,
+                "sides": 8,
+                "type": "magic",
+                "effect": "veneno",
+            },
+        },
+        character_type=CharacterType.ENEMY,
+    )
+
+    # Asignar imagen específica del jefe si existe
+    try:
+        import os
+        import pygame
+
+        boss_img_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "assets",
+            "images",
+            "final_boss.jpg",
+        )
+        if os.path.exists(boss_img_path):
+            boss_img = pygame.image.load(boss_img_path)
+            boss_img = pygame.transform.scale(
+                boss_img, (100, 100)
+            )  # Un poco más grande
+            boss.image = boss_img
+    except Exception as e:
+        print(f"Error cargando imagen del jefe: {e}")
+
+    return boss
