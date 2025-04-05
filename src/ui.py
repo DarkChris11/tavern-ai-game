@@ -359,71 +359,120 @@ def show_attack_effect(
     screen, attacker, defender, attack_name, damage, attack_type="physical"
 ):
     """
-    Muestra un efecto visual para el ataque con curvas para aliados
+    Muestra un efecto visual para el ataque con líneas claras de origen a destino
     """
-    # Calcula las posiciones de los personajes
+    # Mantener una copia del estado original de la pantalla para restaurar después
+    original_screen = screen.copy()
+
+    # CORREGIR POSICIONES - usar exactamente las mismas que en draw_characters
+    # Jugador siempre en posición fija (centro del sprite)
+    player_x, player_y = 100, 300
+    player_center = (player_x + 40, player_y + 40)  # Centro del sprite de 80x80
+
+    # Aliado siempre en posición fija
+    ally_x, ally_y = 200, 300
+    ally_center = (ally_x + 40, ally_y + 40)  # Centro del sprite de 80x80
+
+    # Calcular posiciones de enemigos exactamente igual que en draw_characters
+    enemy_positions = []
+    if hasattr(attacker, "game_state") and attacker.game_state:
+        for i in range(len(attacker.game_state.enemies)):
+            x = 500  # Misma posición X que en draw_characters
+            y = 150 + i * 160  # Mismo espaciado que en draw_characters
+            enemy_positions.append((x + 40, y + 40))  # Centro del sprite
+
+    # Determinar posición del atacante
     if attacker.type.name == "PLAYER":
-        attacker_pos = (140, 340)  # Centro del sprite del jugador
+        attacker_pos = player_center
     elif attacker.type.name == "ALLY":
-        attacker_pos = (240, 340)  # Centro del sprite del aliado
+        attacker_pos = ally_center
     else:
-        # Para enemigos, calculamos basados en su índice (ahora en vertical)
+        # Para enemigos, buscar su índice en la lista de enemigos
         if hasattr(attacker, "game_state") and attacker.game_state:
             enemy_index = next(
                 (i for i, e in enumerate(attacker.game_state.enemies) if e == attacker),
                 0,
             )
-            attacker_pos = (
-                490,  # X fijo para enemigos
-                190 + enemy_index * 160,  # Y variable según posición vertical
-            )
+            if enemy_index < len(enemy_positions):
+                attacker_pos = enemy_positions[enemy_index]
+            else:
+                attacker_pos = (540, 190)  # Fallback
         else:
-            attacker_pos = (490, 190)  # Posición por defecto
+            attacker_pos = (540, 190)  # Fallback
 
-    # Similar para el defensor
+    # Determinar posición del defensor
     if defender.type.name == "PLAYER":
-        defender_pos = (140, 340)
+        defender_pos = player_center
     elif defender.type.name == "ALLY":
-        defender_pos = (240, 340)
+        defender_pos = ally_center
     else:
+        # Para enemigos, buscar su índice
         if hasattr(defender, "game_state") and defender.game_state:
             enemy_index = next(
                 (i for i, e in enumerate(defender.game_state.enemies) if e == defender),
                 0,
             )
-            defender_pos = (
-                490,  # X fijo para enemigos
-                190 + enemy_index * 160,  # Y variable según posición vertical
-            )
+            if enemy_index < len(enemy_positions):
+                defender_pos = enemy_positions[enemy_index]
+            else:
+                defender_pos = (540, 190)  # Fallback
         else:
-            defender_pos = (490, 190)
+            defender_pos = (540, 190)  # Fallback
 
     # Colores para diferentes tipos de ataque
     attack_colors = {
         "physical": COLORS["RED"],
         "magic": COLORS["BLUE"],
         "holy": COLORS["GOLD"],
-        "veneno": COLORS["GREEN"],
-        "fire": (255, 128, 0),  # Naranja para fuego
-        "ice": (0, 255, 255),  # Cyan para hielo
-        "healing": (50, 255, 50),  # Verde brillante para curación
+        "veneno": (0, 180, 0),  # Verde para veneno
+        "sangrado": (220, 0, 0),  # Rojo intenso para sangrado
+        "congelado": (0, 200, 255),  # Azul cian para congelado
+        "fuego": (255, 128, 0),  # Naranja para fuego
+        "debilitar": (150, 150, 150),  # Gris para debilitar
+        "bendición": (255, 215, 0),  # Dorado para bendición
+        "fire": (255, 128, 0),
+        "ice": (0, 255, 255),
+        "healing": (50, 255, 50),
     }
+
+    # Determinar si el ataque tiene un efecto de estado
+    effect_color = None
+    if hasattr(attacker, "attacks") and attack_name in attacker.attacks:
+        attack_stats = attacker.attacks[attack_name]
+        if "effect" in attack_stats:
+            effect_name = attack_stats["effect"]
+            if effect_name in attack_colors:
+                effect_color = attack_colors[effect_name]
 
     # Determinar si es curación en lugar de ataque
     is_healing = "heal" in attack_name.lower() or damage < 0
 
-    # Color personalizado para el aliado
-    if attacker.type.name == "ALLY":
-        color = (
-            attack_colors["healing"] if is_healing else (0, 255, 255)
-        )  # Cyan para aliado
+    # Color del efecto (prioridad al efecto sobre el tipo de ataque)
+    if effect_color:
+        color = effect_color
+    elif is_healing:
+        color = attack_colors["healing"]
     else:
         color = attack_colors.get(attack_type, COLORS["WHITE"])
 
-    # Dibujar línea indicadora de objetivo con texto antes de la animación
-    screen_copy = screen.copy()
+    # 1. LÍNEAS DE ATAQUE MEJORADAS - Mostrar claramente origen y destino
+    # ¡IMPORTANTE! - Dibujar directamente en la pantalla original en lugar de en una copia
 
-    # Línea diferente para aliado (curva)
+    # Dibujar marcador circular en posición del atacante - MÁS GRANDE Y VISIBLE
+    pygame.draw.circle(screen, color, attacker_pos, 15, 3)  # Más grande y más grueso
+    atk_text = font_small.render("ORIGEN", True, color)
+    screen.blit(
+        atk_text, (attacker_pos[0] - atk_text.get_width() // 2, attacker_pos[1] - 25)
+    )
+
+    # Dibujar marcador en posición del defensor - MÁS GRANDE Y VISIBLE
+    pygame.draw.circle(screen, color, defender_pos, 15, 3)  # Más grande y más grueso
+    def_text = font_small.render("DESTINO", True, color)
+    screen.blit(
+        def_text, (defender_pos[0] - def_text.get_width() // 2, defender_pos[1] - 25)
+    )
+
+    # Línea de ataque - diferente según tipo de personaje - MÁS ANCHA
     if attacker.type.name == "ALLY":
         # Para aliados, dibujar una curva en lugar de una línea recta
         control_point = (
@@ -433,8 +482,8 @@ def show_attack_effect(
 
         # Dibujar curva con múltiples líneas (aproximación)
         points = []
-        for t in range(0, 11):
-            t = t / 10
+        for t in range(0, 21):  # Más puntos para una curva más suave
+            t = t / 20
             # Fórmula de curva Bezier cuadrática
             x = (
                 (1 - t) ** 2 * attacker_pos[0]
@@ -448,35 +497,98 @@ def show_attack_effect(
             )
             points.append((int(x), int(y)))
 
+        # Dibujar línea de la curva - MÁS ANCHA
         for i in range(len(points) - 1):
-            pygame.draw.line(screen_copy, color, points[i], points[i + 1], 2)
-    else:
-        # Para otros personajes, línea recta
-        pygame.draw.line(screen_copy, color, attacker_pos, defender_pos, 2)
+            pygame.draw.line(
+                screen, color, points[i], points[i + 1], 4
+            )  # Línea más ancha
 
-    # Texto de acción
-    action_text = "CURA" if is_healing else "OBJETIVO"
-    target_text = font_small.render(action_text, True, color)
+        # Flechas a lo largo de la curva para indicar dirección - MÁS GRANDES
+        for i in range(1, len(points), 5):
+            if i < len(points) - 1:
+                # Calcular dirección de la flecha
+                dx = points[i + 1][0] - points[i - 1][0]
+                dy = points[i + 1][1] - points[i - 1][1]
+                # Normalizar
+                length = max(1, (dx**2 + dy**2) ** 0.5)
+                dx, dy = dx / length * 12, dy / length * 12  # Flechas más grandes
+
+                # Dibujar flecha perpendicular a la dirección
+                pygame.draw.line(
+                    screen,  # Dibujar en la pantalla original
+                    color,
+                    (points[i][0] - dy, points[i][1] + dx),
+                    (points[i][0] + dy, points[i][1] - dx),
+                    3,  # Línea más ancha
+                )
+    else:
+        # Para otros personajes, línea recta con flechas direccionales - MÁS ANCHA
+        pygame.draw.line(
+            screen, color, attacker_pos, defender_pos, 4
+        )  # Línea más ancha
+
+        # Añadir flechas a lo largo de la línea para mostrar dirección - MÁS GRANDES
+        dx = defender_pos[0] - attacker_pos[0]
+        dy = defender_pos[1] - attacker_pos[1]
+        dist = max(1, (dx**2 + dy**2) ** 0.5)
+        dx, dy = dx / dist, dy / dist
+
+        # Dibujar 3 flechas a lo largo de la línea
+        for i in range(1, 4):
+            point_x = attacker_pos[0] + dx * dist * i / 4
+            point_y = attacker_pos[1] + dy * dist * i / 4
+
+            # Flecha perpendicular a la dirección - MÁS GRANDE
+            perp_x, perp_y = -dy * 12, dx * 12  # Flechas más grandes
+            pygame.draw.line(
+                screen,  # Dibujar en la pantalla original
+                color,
+                (point_x - perp_x, point_y - perp_y),
+                (point_x + perp_x, point_y + perp_y),
+                3,  # Línea más ancha
+            )
+
+    # Texto de acción - MÁS GRANDE Y CONTRASTANTE
+    action_text = "CURA" if is_healing else attack_name.upper()
+    target_text = font_medium.render(
+        action_text, True, color
+    )  # Usar fuente medium en lugar de small
     arrow_pos = (
         (attacker_pos[0] + defender_pos[0]) // 2,
         (attacker_pos[1] + defender_pos[1]) // 2,
     )
-    screen_copy.blit(
-        target_text, (arrow_pos[0] - target_text.get_width() // 2, arrow_pos[1] - 15)
-    )
-    pygame.display.flip()
-    pygame.time.delay(300)
 
-    # 1. Dibujar proyectil animado del atacante al defensor
+    # Agregar un fondo para que el texto sea más legible
+    text_bg = pygame.Surface(
+        (target_text.get_width() + 10, target_text.get_height() + 10), pygame.SRCALPHA
+    )
+    text_bg.fill((0, 0, 0, 150))  # Fondo semi-transparente
+    screen.blit(
+        text_bg,
+        (arrow_pos[0] - target_text.get_width() // 2 - 5, arrow_pos[1] - 20 - 5),
+    )
+
+    screen.blit(
+        target_text, (arrow_pos[0] - target_text.get_width() // 2, arrow_pos[1] - 20)
+    )
+
+    # IMPORTANTE: Actualizar la pantalla y dar tiempo para ver las líneas
+    pygame.display.flip()
+    pygame.time.delay(700)  # Dar más tiempo para ver las líneas (700ms)
+
+    # Continuar con el resto de la función...
+    # Usar original_screen para restaurar el estado normal para las animaciones
+
+    # 2. ANIMACIÓN DE PROYECTIL MEJORADA
     steps = 15
     for i in range(steps + 1):
-        # Hacemos una copia de la pantalla actual
-        screen_copy = screen.copy()
+        # Importante: Restaurar la pantalla original antes de añadir cada frame de animación
+        screen.blit(original_screen, (0, 0))
 
-        # Posición interpolada para el proyectil, diferente para aliados (con curva)
+        # Posición interpolada para el proyectil
         if attacker.type.name == "ALLY":
             progress = i / steps
-            # Usar la misma curva Bezier para el movimiento del proyectil
+            # Usar la misma curva Bezier
             t = progress
             x = (
                 (1 - t) ** 2 * attacker_pos[0]
@@ -494,57 +606,107 @@ def show_attack_effect(
             x = attacker_pos[0] + (defender_pos[0] - attacker_pos[0]) * progress
             y = attacker_pos[1] + (defender_pos[1] - attacker_pos[1]) * progress
 
-        # Dibujar proyectil más vistoso según el tipo
-        if is_healing:
-            # Proyectil de curación (círculo brillante con partículas)
-            pygame.draw.circle(
-                screen_copy, attack_colors["healing"], (int(x), int(y)), 8
+        # También dibujar una línea atenuada para mostrar la trayectoria
+        if attacker.type.name == "ALLY":
+            # Dibujar la curva con menor opacidad
+            for j in range(len(points) - 1):
+                pygame.draw.line(
+                    screen,
+                    (color[0], color[1], color[2], 100),
+                    points[j],
+                    points[j + 1],
+                    2,
+                )
+        else:
+            # Dibujar línea recta con menor opacidad
+            lighter_color = (color[0], color[1], color[2], 100)
+            s = pygame.Surface(
+                (screen.get_width(), screen.get_height()), pygame.SRCALPHA
             )
-            for _ in range(4):  # Partículas alrededor
+            pygame.draw.line(s, lighter_color, attacker_pos, defender_pos, 2)
+            screen.blit(s, (0, 0))
+
+        # Dibujar proyectil según tipo de ataque/efecto
+        if is_healing:
+            # Proyectil de curación con partículas
+            pygame.draw.circle(screen, attack_colors["healing"], (int(x), int(y)), 8)
+            for _ in range(4):
                 offset_x = random.randint(-10, 10)
                 offset_y = random.randint(-10, 10)
                 pygame.draw.circle(
-                    screen_copy,
+                    screen,
                     (200, 255, 200),
                     (int(x + offset_x), int(y + offset_y)),
                     2,
                 )
-        else:
-            # Proyectil de ataque según tipo
-            if attack_type == "physical":
-                # Para ataques físicos, dibujar una línea
-                start_x = attacker_pos[0] + (defender_pos[0] - attacker_pos[0]) * max(
-                    0, progress - 0.1
-                )
-                start_y = attacker_pos[1] + (defender_pos[1] - attacker_pos[1]) * max(
-                    0, progress - 0.1
-                )
-                pygame.draw.line(
-                    screen_copy, color, (start_x, start_y), (int(x), int(y)), 3
+        elif effect_color:
+            # Proyectil con efecto especial (resto igual que antes)
+            # ...código existente para efectos especiales...
+            if "veneno" in attack_name.lower() or "espinas" in attack_name.lower():
+                # Veneno: múltiples partículas verdes
+                for j in range(5):
+                    offset_x = random.randint(-8, 8)
+                    offset_y = random.randint(-8, 8)
+                    pygame.draw.circle(
+                        screen, color, (int(x + offset_x), int(y + offset_y)), 4
+                    )
+            elif "congelado" in attack_name.lower() or "hielo" in attack_name.lower():
+                # Congelado: copos de hielo
+                pygame.draw.circle(screen, color, (int(x), int(y)), 6)
+                for angle in range(0, 360, 60):
+                    rad = angle * math.pi / 180
+                    ice_x = x + 8 * math.cos(rad)
+                    ice_y = y + 8 * math.sin(rad)
+                    pygame.draw.circle(screen, color, (int(ice_x), int(ice_y)), 2)
+            elif "sangrado" in attack_name.lower():
+                # Sangrado: gotas rojas
+                pygame.draw.circle(screen, color, (int(x), int(y)), 6)
+                pygame.draw.polygon(
+                    screen,
+                    color,
+                    [
+                        (int(x), int(y + 5)),
+                        (int(x - 3), int(y + 12)),
+                        (int(x + 3), int(y + 12)),
+                    ],
                 )
             else:
-                # Para otros ataques, dibuja un círculo
-                pygame.draw.circle(screen_copy, color, (int(x), int(y)), 8)
-
-        # Mostrar nombre del ataque en el medio del trayecto
-        if i == steps // 2:
-            attack_text = font_small.render(attack_name, True, color)
-            screen_copy.blit(attack_text, (x - attack_text.get_width() // 2, y - 25))
+                # Efecto genérico
+                pygame.draw.circle(screen, color, (int(x), int(y)), 8)
+        elif attack_type == "physical":
+            # Resto del código para tipos de ataque...
+            # Ataques físicos: línea/trazo
+            start_x = x - dx * 15
+            start_y = y - dy * 15
+            pygame.draw.line(screen, color, (start_x, start_y), (int(x), int(y)), 3)
+        elif attack_type == "magic":
+            # Magia: círculos concéntricos
+            pygame.draw.circle(screen, color, (int(x), int(y)), 8)
+            pygame.draw.circle(screen, (255, 255, 255), (int(x), int(y)), 4)
+        else:
+            # Ataque genérico
+            pygame.draw.circle(screen, color, (int(x), int(y)), 8)
 
         # Actualizar pantalla
         pygame.display.flip()
-        pygame.time.delay(20)  # Pequeña pausa
+        pygame.time.delay(20)
 
-    # 2. Efecto en el objetivo (diferente para curación vs daño)
+    # Continuar con el resto de la función igual que antes
+    # Restaurar la pantalla original antes de efectos adicionales
+    screen.blit(original_screen, (0, 0))
+
+    # 3 y 4. EFECTOS FINALES DE DAÑO/CURACIÓN
+    # ... resto de la función sin cambios ...
+
+    # 3. EFECTO EN EL OBJETIVO MEJORADO
     if is_healing:
-        # Efecto de curación: destellos verdes ascendentes
+        # Efecto de curación: brillo verde
         for _ in range(3):
-            # Partículas ascendentes
             for i in range(10):
                 screen_copy = screen.copy()
                 for j in range(5):
                     offset_x = random.randint(-30, 30)
-                    particle_y = defender_pos[1] - 10 - i * 5
+                    particle_y = defender_pos[1] - i * 5 - 10
                     pygame.draw.circle(
                         screen_copy,
                         attack_colors["healing"],
@@ -553,49 +715,38 @@ def show_attack_effect(
                     )
                 pygame.display.flip()
                 pygame.time.delay(30)
-
-            # Mostrar "+salud" flotando
-            healing_text = font_medium.render(
-                f"+{abs(damage)}", True, attack_colors["healing"]
-            )
-            for i in range(15):
-                screen_copy = screen.copy()
-                screen_copy.blit(
-                    healing_text,
-                    (
-                        defender_pos[0] - healing_text.get_width() // 2,
-                        defender_pos[1] - 60 - i * 2,
-                    ),
-                )
-                pygame.display.flip()
-                pygame.time.delay(30)
     else:
-        # Efecto de daño: destello rojo
+        # Efecto de daño: destello en el objetivo
         for _ in range(3):
-            # Dibujar rectángulo rojo sobre el defensor
+            # Flash sobre el objetivo
             flash_surface = pygame.Surface((80, 80), pygame.SRCALPHA)
-            flash_surface.fill((255, 0, 0, 150))  # Rojo semi-transparente
+            flash_surface.fill((255, 0, 0, 150))
             screen.blit(flash_surface, (defender_pos[0] - 40, defender_pos[1] - 40))
             pygame.display.flip()
             pygame.time.delay(80)
 
             # Restaurar pantalla
+            screen_copy = screen.copy()
             pygame.display.flip()
             pygame.time.delay(80)
 
-        # 3. Mostrar daño como número flotante
-        damage_text = font_medium.render(f"-{damage}", True, COLORS["RED"])
-        for i in range(15):
-            screen_copy = screen.copy()
-            screen_copy.blit(
-                damage_text,
-                (
-                    defender_pos[0] - damage_text.get_width() // 2,
-                    defender_pos[1] - 60 - i * 2,
-                ),
-            )
-            pygame.display.flip()
-            pygame.time.delay(30)
+    # 4. NÚMERO DE DAÑO/CURACIÓN FLOTANTE
+    text_color = COLORS["GREEN"] if is_healing else COLORS["RED"]
+    damage_text = font_medium.render(
+        f"+{abs(damage)}" if is_healing else f"-{damage}", True, text_color
+    )
+
+    for i in range(15):
+        screen_copy = screen.copy()
+        screen_copy.blit(
+            damage_text,
+            (
+                defender_pos[0] - damage_text.get_width() // 2,
+                defender_pos[1] - 60 - i * 2,
+            ),
+        )
+        pygame.display.flip()
+        pygame.time.delay(30)
 
 
 def show_message(screen, title, message):
