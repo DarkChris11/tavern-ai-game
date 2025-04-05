@@ -2,7 +2,7 @@ import pygame
 import sys
 import os
 from src.engine import GameEngine
-from src.menu import MainMenu, OptionsMenu, get_config
+from src.menu import MainMenu, OptionsMenu, get_config, WisdomGenerator
 from src.tutorial import Tutorial
 
 # Asegúrate que la carpeta config exista
@@ -26,6 +26,10 @@ def main():
     # Configuración
     config = get_config()
 
+    # Generar la frase sabia UNA SOLA VEZ al iniciar el juego
+    wisdom_generator = WisdomGenerator(model_id=config["ai_model"])
+    global_wisdom = wisdom_generator.generate_new_phrase()
+
     # Bucle principal
     running = True
     while running:
@@ -33,6 +37,12 @@ def main():
             if game_state == "MENU":
                 # Mostrar menú principal
                 menu = MainMenu(screen)
+                # Establecer la frase generada al inicio
+                menu.current_wisdom = global_wisdom
+                # Hacerla visible inmediatamente
+                menu.wisdom_visible = True
+                menu.wisdom_opacity = 255
+
                 next_state = menu.run()
                 # Solamente cambiar el estado si no es None
                 if next_state:

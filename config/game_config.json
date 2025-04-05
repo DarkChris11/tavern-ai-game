@@ -2,5 +2,5 @@
     "difficulty": "Normal",
     "music": true,
     "sound_effects": true,
-    "ai_model": "local"
+    "ai_model": "gpt-3.5-turbo"
 }
