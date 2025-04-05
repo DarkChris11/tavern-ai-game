@@ -1,7 +1,38 @@
 import pygame
 import sys
 import os
+import json
 from src.ui import COLORS, font_large, font_medium
+
+# Intentar importar los modelos, con fallback si no están disponibles
+try:
+    from src.ai.list_models import MODEL_NAMES, get_model_index, get_model_id
+except ImportError:
+    print("Módulo list_models no encontrado. Usando valores por defecto.")
+    MODEL_NAMES = ["GPT-3.5", "GPT-4", "Local"]
+
+    def get_model_index(model_id):
+        if model_id == "gpt-4":
+            return 1
+        if model_id == "local":
+            return 2
+        return 0  # gpt-3.5-turbo por defecto
+
+    def get_model_id(model_name):
+        if model_name == "GPT-4":
+            return "gpt-4"
+        if model_name == "Local":
+            return "local"
+        return "gpt-3.5-turbo"
+
+
+# Variable global para almacenar configuración
+_CONFIG = {
+    "difficulty": "Normal",
+    "music": True,
+    "sound_effects": True,
+    "ai_model": "gpt-3.5-turbo",
+}
 
 
 class MainMenu:
@@ -9,122 +40,28 @@ class MainMenu:
         self.screen = screen
         self.width, self.height = screen.get_size()
         self.running = True
-
-        # Cargar imagen de fondo (si existe)
-        self.background = None
-        bg_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "assets",
-            "images",
-            "background.jpg",
-        )
-        try:
-            if os.path.exists(bg_path):
-                self.background = pygame.image.load(bg_path)
-                self.background = pygame.transform.scale(
-                    self.background, (self.width, self.height)
-                )
-        except Exception as e:
-            print(f"Error cargando imagen de fondo: {e}")
-
-        # Opciones del menú
         self.options = ["Jugar", "Tutorial", "Opciones", "Salir"]
         self.selected = 0
-
-        # Sonidos (si se implementan)
-        self.select_sound = None
-        self.confirm_sound = None
-
-        # Reloj para controlar FPS
         self.clock = pygame.time.Clock()
+
+        # Resto del código de inicialización...
 
     def draw(self):
         # Dibujar fondo
-        if self.background:
-            self.screen.blit(self.background, (0, 0))
-        else:
-            # Fondo gradiente si no hay imagen
-            for y in range(self.height):
-                color_value = int(y / self.height * 100)
-                pygame.draw.line(
-                    self.screen, (20, 20, 50 + color_value), (0, y), (self.width, y)
-                )
+        self.screen.fill((20, 20, 40))  # Fondo oscuro
 
-        # Título del juego
+        # Título
         title = font_large.render("Pygame AI RPG", True, COLORS["GOLD"])
-        title_rect = title.get_rect(center=(self.width // 2, self.height // 4))
+        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 100))
 
-        # Efecto de brillo para el título
-        glow_surf = pygame.Surface(
-            (title.get_width() + 10, title.get_height() + 10), pygame.SRCALPHA
-        )
-        pygame.draw.rect(
-            glow_surf,
-            (255, 215, 0, 100),
-            (0, 0, glow_surf.get_width(), glow_surf.get_height()),
-            border_radius=10,
-        )
-        glow_rect = glow_surf.get_rect(center=title_rect.center)
-        self.screen.blit(glow_surf, glow_rect)
-        self.screen.blit(title, title_rect)
-
-        # Subtítulo
-        subtitle = font_medium.render(
-            "Una aventura táctica con IA", True, COLORS["WHITE"]
-        )
-        self.screen.blit(
-            subtitle,
-            (
-                self.width // 2 - subtitle.get_width() // 2,
-                self.height // 4 + title.get_height(),
-            ),
-        )
-
-        # Opciones del menú
-        menu_y = self.height // 2
+        # Opciones
+        y = 300
         for i, option in enumerate(self.options):
             color = COLORS["GOLD"] if i == self.selected else COLORS["WHITE"]
             text = font_medium.render(option, True, color)
+            self.screen.blit(text, (self.width // 2 - text.get_width() // 2, y))
+            y += 60
 
-            # Resaltar opción seleccionada
-            if i == self.selected:
-                # Dibujar rectángulo redondeado detrás de la opción seleccionada
-                rect = pygame.Rect(
-                    self.width // 2 - text.get_width() // 2 - 20,
-                    menu_y - 5,
-                    text.get_width() + 40,
-                    text.get_height() + 10,
-                )
-                pygame.draw.rect(self.screen, (60, 60, 90), rect, border_radius=5)
-                pygame.draw.rect(self.screen, COLORS["GOLD"], rect, 2, border_radius=5)
-
-                # Indicador de selección (flechas)
-                arrow = "➤ "
-                arrow_text = font_medium.render(arrow, True, COLORS["GOLD"])
-                self.screen.blit(
-                    arrow_text,
-                    (
-                        self.width // 2
-                        - text.get_width() // 2
-                        - arrow_text.get_width()
-                        - 5,
-                        menu_y,
-                    ),
-                )
-
-            # Dibujar texto de opción
-            self.screen.blit(text, (self.width // 2 - text.get_width() // 2, menu_y))
-            menu_y += 60
-
-        # Información en la parte inferior
-        info_text = font_medium.render(
-            "© 2023 - Desarrollado con ChatGPT", True, COLORS["GRAY"]
-        )
-        self.screen.blit(
-            info_text, (self.width // 2 - info_text.get_width() // 2, self.height - 50)
-        )
-
-        # Actualizar pantalla
         pygame.display.flip()
 
     def handle_events(self):
@@ -132,24 +69,21 @@ class MainMenu:
             if event.type == pygame.QUIT:
                 self.running = False
                 return "QUIT"
-
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     self.selected = (self.selected - 1) % len(self.options)
-                    # Reproducir sonido si está implementado
                 elif event.key == pygame.K_DOWN:
                     self.selected = (self.selected + 1) % len(self.options)
-                    # Reproducir sonido si está implementado
                 elif event.key == pygame.K_RETURN:
-                    # Reproducir sonido si está implementado
                     return self.options[self.selected]
+                elif event.key == pygame.K_ESCAPE:
+                    self.running = False
+                    return "QUIT"
         return None
 
     def run(self):
         while self.running:
-            self.clock.tick(60)  # 60 FPS
-
-            # Manejar eventos
+            self.clock.tick(60)
             result = self.handle_events()
             if result == "QUIT":
                 return "QUIT"
@@ -161,10 +95,7 @@ class MainMenu:
                 return "OPTIONS"
             elif result == "Salir":
                 return "QUIT"
-
-            # Dibujar el menú
             self.draw()
-
         return "QUIT"
 
 
@@ -173,28 +104,44 @@ class OptionsMenu:
         self.screen = screen
         self.width, self.height = screen.get_size()
         self.running = True
+        self.clock = pygame.time.Clock()
 
-        # Opciones configurables
+        # Obtener config actual
+        config = get_config()
+
+        # Mapear valores a índices
+        difficulty_idx = 1  # Normal por defecto
+        if config["difficulty"] == "Easy":
+            difficulty_idx = 0
+        elif config["difficulty"] == "Hard":
+            difficulty_idx = 2
+
+        music_idx = 0 if config["music"] else 1
+        effects_idx = 0 if config["sound_effects"] else 1
+
+        # Obtener índice del modelo actual
+        model_idx = get_model_index(config["ai_model"])
+
+        # Opciones
         self.options = [
             {
                 "name": "Dificultad",
                 "values": ["Fácil", "Normal", "Difícil"],
-                "selected": 1,
+                "selected": difficulty_idx,
             },
-            {"name": "Música", "values": ["On", "Off"], "selected": 0},
-            {"name": "Efectos", "values": ["On", "Off"], "selected": 0},
+            {"name": "Música", "values": ["On", "Off"], "selected": music_idx},
+            {"name": "Efectos", "values": ["On", "Off"], "selected": effects_idx},
             {
                 "name": "Modelo IA",
-                "values": ["GPT-3.5", "GPT-4", "Local"],
-                "selected": 0,
+                "values": MODEL_NAMES,
+                "selected": model_idx,
             },
             {"name": "Volver", "values": None, "selected": 0},
         ]
         self.selected_option = 0
-        self.clock = pygame.time.Clock()
 
     def draw(self):
-        # Fondo
+        # Dibujar fondo
         self.screen.fill((20, 20, 40))
 
         # Título
@@ -202,73 +149,29 @@ class OptionsMenu:
         self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 50))
 
         # Opciones
-        menu_y = 150
+        y = 150
         for i, option in enumerate(self.options):
             # Color según selección
-            option_color = (
-                COLORS["GOLD"] if i == self.selected_option else COLORS["WHITE"]
-            )
+            color = COLORS["GOLD"] if i == self.selected_option else COLORS["WHITE"]
 
-            # Nombre de la opción
-            option_text = font_medium.render(option["name"], True, option_color)
-            self.screen.blit(option_text, (self.width // 4, menu_y))
+            # Nombre
+            text = font_medium.render(option["name"], True, color)
+            self.screen.blit(text, (200, y))
 
-            # Valores si existen
+            # Valor si existe
             if option["values"]:
                 value_text = font_medium.render(
-                    option["values"][option["selected"]],
-                    True,
-                    COLORS["GREEN"] if i == self.selected_option else COLORS["GRAY"],
+                    option["values"][option["selected"]], True, COLORS["GREEN"]
                 )
-                self.screen.blit(
-                    value_text,
-                    (self.width * 3 // 4 - value_text.get_width() // 2, menu_y),
-                )
+                self.screen.blit(value_text, (600, y))
 
-                # Flechas para cambiar valor si está seleccionado
-                if i == self.selected_option:
-                    pygame.draw.polygon(
-                        self.screen,
-                        COLORS["WHITE"],
-                        [
-                            (
-                                self.width * 3 // 4 - value_text.get_width() // 2 - 30,
-                                menu_y + 12,
-                            ),
-                            (
-                                self.width * 3 // 4 - value_text.get_width() // 2 - 20,
-                                menu_y + 6,
-                            ),
-                            (
-                                self.width * 3 // 4 - value_text.get_width() // 2 - 20,
-                                menu_y + 18,
-                            ),
-                        ],
-                    )
-                    pygame.draw.polygon(
-                        self.screen,
-                        COLORS["WHITE"],
-                        [
-                            (
-                                self.width * 3 // 4 + value_text.get_width() // 2 + 30,
-                                menu_y + 12,
-                            ),
-                            (
-                                self.width * 3 // 4 + value_text.get_width() // 2 + 20,
-                                menu_y + 6,
-                            ),
-                            (
-                                self.width * 3 // 4 + value_text.get_width() // 2 + 20,
-                                menu_y + 18,
-                            ),
-                        ],
-                    )
-
-            menu_y += 70
+            y += 70
 
         # Instrucciones
         instructions = font_medium.render(
-            "↑↓: Navegar   ←→: Cambiar   Enter: Seleccionar", True, COLORS["GRAY"]
+            "↑↓: Navegar   ←→: Cambiar   Enter: Seleccionar   ESC: Volver",
+            True,
+            COLORS["GRAY"],
         )
         self.screen.blit(
             instructions,
@@ -280,23 +183,26 @@ class OptionsMenu:
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                save_options(self)
                 self.running = False
                 return "QUIT"
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    return "BACK"
+                    save_options(self)
+                    return "MENU"
 
-                if event.key == pygame.K_UP:
+                elif event.key == pygame.K_UP:
                     self.selected_option = (self.selected_option - 1) % len(
                         self.options
                     )
+
                 elif event.key == pygame.K_DOWN:
                     self.selected_option = (self.selected_option + 1) % len(
                         self.options
                     )
 
-                # Cambiar valores con izquierda/derecha
+                # Cambiar valores
                 elif event.key == pygame.K_LEFT:
                     option = self.options[self.selected_option]
                     if option["values"]:
@@ -312,32 +218,87 @@ class OptionsMenu:
                         )
 
                 elif event.key == pygame.K_RETURN:
-                    if (
-                        self.selected_option == len(self.options) - 1
-                    ):  # Última opción (Volver)
-                        return "BACK"
+                    if self.selected_option == len(self.options) - 1:  # Volver
+                        save_options(self)
+                        return "MENU"
 
         return None
 
     def run(self):
         while self.running:
             self.clock.tick(60)
-
             result = self.handle_events()
             if result:
                 return result
-
             self.draw()
 
-        return "BACK"
+        save_options(self)
+        return "MENU"
+
+
+def save_options(options_menu):
+    """Guarda las opciones del menú"""
+    global _CONFIG
+
+    # Mapeos
+    option_mapping = {
+        "Dificultad": "difficulty",
+        "Música": "music",
+        "Efectos": "sound_effects",
+        "Modelo IA": "ai_model",
+    }
+
+    value_mapping = {
+        "Fácil": "Easy",
+        "Normal": "Normal",
+        "Difícil": "Hard",
+        "On": True,
+        "Off": False,
+    }
+
+    # Guardar opciones
+    for option in options_menu.options:
+        if option["name"] in option_mapping and option["values"]:
+            config_key = option_mapping[option["name"]]
+            selected_value = option["values"][option["selected"]]
+
+            # Caso especial para modelos de IA
+            if config_key == "ai_model":
+                _CONFIG[config_key] = get_model_id(selected_value)
+            else:
+                _CONFIG[config_key] = value_mapping.get(selected_value, selected_value)
+
+    print(f"Configuración guardada: {_CONFIG}")
+
+    # Guardar en archivo
+    try:
+        config_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "config", "game_config.json"
+        )
+        # Crear directorio si no existe
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+
+        with open(config_path, "w") as f:
+            json.dump(_CONFIG, f, indent=4)
+    except Exception as e:
+        print(f"Error guardando configuración: {e}")
 
 
 def get_config():
-    """Devuelve la configuración actual"""
-    # Aquí se podrían cargar configuraciones de un archivo
-    return {
-        "difficulty": "Normal",
-        "music": True,
-        "sound_effects": True,
-        "ai_model": "gpt-3.5-turbo",
-    }
+    """Obtiene la configuración actual"""
+    global _CONFIG
+
+    # Intentar cargar desde archivo
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "config", "game_config.json"
+    )
+
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                loaded_config = json.load(f)
+                _CONFIG.update(loaded_config)
+    except Exception as e:
+        print(f"Error cargando configuración: {e}")
+
+    return _CONFIG.copy()

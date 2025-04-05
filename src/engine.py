@@ -55,13 +55,27 @@ class GameEngine:
         self.clock = pygame.time.Clock()
 
         # Inicializar cliente de IA
+
+        # Inicializar cliente de IA
+        # En la parte de inicialización del cliente de IA:
+
+        # Inicializar cliente de IA
         self.ai_client = None
         try:
             from src.ai.chatgpt_client import ChatGPTClient
 
-            self.ai_client = ChatGPTClient()
+            # Obtener parámetros de configuración
+            difficulty = self.config.get("difficulty", "Normal")
+            model_id = self.config.get("ai_model", "gpt-3.5-turbo")
+
+            # Crear cliente con parámetros correctos
+            self.ai_client = ChatGPTClient(difficulty=difficulty, model_id=model_id)
+            print(
+                f"Cliente IA inicializado con modelo: {model_id} y dificultad: {difficulty}"
+            )
         except Exception as e:
             print(f"Error inicializando cliente IA: {e}")
+            print("El juego funcionará sin asistencia de IA")
 
         # Inicializar estado del juego
         from src.characters import GameState

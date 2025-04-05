@@ -1,9 +1,21 @@
 {
   "screen_width": 800,
   "screen_height": 600,
-  "background_color": [255, 255, 255],
-  "player_color": [0, 0, 255],
-  "ai_color": [255, 0, 0],
+  "background_color": [
+    255,
+    255,
+    255
+  ],
+  "player_color": [
+    0,
+    0,
+    255
+  ],
+  "ai_color": [
+    255,
+    0,
+    0
+  ],
   "fps": 60,
   "font_size": 24,
   "max_ai_decisions": 5
