@@ -3,16 +3,25 @@
 ![Pygame AI RPG](assets/images/game_banner.png)
 
 ## Descripción
-Pygame AI RPG es un juego de rol por turnos donde controlas a un Brujo y una Curandera aliada que deben enfrentarse a diversos enemigos. El juego integra inteligencia artificial para controlar el comportamiento de los enemigos, creando una experiencia de combate dinámica y estratégica.
+Tavern AI es un juego de rol táctico por turnos ambientado en una taberna medieval mágica. Controlas a un Brujo y una Curandera aliada que deben enfrentarse a diversos enemigos mientras avanzan hacia un enfrentamiento final con el poderoso Señor del Caos. El juego integra inteligencia artificial avanzada para controlar el comportamiento de los enemigos, creando una experiencia de combate dinámica y estratégica.
 
 ## Características principales
-- Sistema de combate por turnos
-- Múltiples habilidades y ataques con efectos visuales
-- Efectos de estado (veneno, sangrado, congelación, etc.)
-- IA para controlar enemigos y aliados
-- Integración con ChatGPT para decisiones estratégicas
-- Interfaz visual con animaciones de ataque
-- Sistema de mensajes de combate
+- Sistema de combate por turnos con profundidad táctica
+- Múltiples habilidades y ataques con efectos visuales impactantes
+- Efectos de estado (veneno, sangrado, congelación, debilitamiento, etc.)
+- IA estratégica para enemigos con comportamiento visible y comprensible
+- Jefe final adaptativo con múltiples habilidades devastadoras
+- Integración con ChatGPT para decisiones estratégicas en tiempo real
+- Interfaz visual con animaciones de ataque y efectos de partículas
+- Sistema de mensajes de combate detallado
+
+## Inteligencia Artificial y Estrategia
+Tavern AI destaca por su sistema de IA visible y comprensible:
+
+- **Priorización de objetivos**: Observa cómo los enemigos analizan el campo de batalla y priorizan atacar primero a tu Curandera para eliminar el soporte de curación.
+- **Aplicación estratégica de efectos**: La IA aplica efectos de estado como veneno o sangrado para causar daño continuo, o debilitamiento para reducir tu efectividad.
+- **Adaptación según la situación**: Los enemigos evalúan su propia salud, tus puntos débiles y la presencia de efectos activos para tomar decisiones.
+- **Jefe final inteligente**: El Señor del Caos utiliza una IA mejorada que combina todos estos elementos para ofrecer un desafío único.
 
 ## Requisitos
 - Python 3.7 o superior
@@ -42,7 +51,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Configuración de la API de OpenAI (opcional):
+4. Configuración de la API de OpenAI (opcional pero recomendado):
    - Crea un archivo .env en la raíz del proyecto
    - Añade tu clave de API: `OPENAI_API_KEY=tu_clave_aqui`
 
@@ -59,43 +68,61 @@ python main.py
 - **P**: Usar poción
 - **D**: Defender
 - **C**: Borrar historial de mensajes
+- **ESC**: Volver al menú principal
 
 ### Mecánicas de juego
 - **Combate por turnos**: Tú atacas primero, luego los enemigos
-- **Efectos de estado**: Algunos ataques aplican efectos que duran varios turnos
-- **Aliado**: La Curandera te ayudará usando su IA para decidir entre atacar o curarte
+- **Efectos de estado**: Algunos ataques aplican efectos que duran varios turnos:
+  - *Veneno*: Daño continuo por turno
+  - *Sangrado*: Daño basado en porcentaje de salud
+  - *Congelación*: Reduce la velocidad y posibilidad de perder turno
+  - *Debilitamiento*: Reduce el daño causado
+  - *Drenaje*: El atacante recupera parte del daño como salud
+- **Aliado con IA**: La Curandera utilizará su IA para decidir entre atacar o curarte según la situación
 - **Pociones**: Usa pociones para recuperar salud en momentos críticos
+- **Progresión de biomas**: Avanza por distintos entornos hasta llegar al Señor del Caos
+
+## El Jefe Final
+Al final de tu aventura te enfrentarás al Señor del Caos, un poderoso enemigo con:
+
+- Estadísticas adaptadas a tu nivel de juego
+- Cinco ataques devastadores con diversos efectos
+- IA superior que utiliza estrategias combinadas
+- Mayor resistencia y capacidad de daño
 
 ## Estructura del proyecto
-
 ```
-pygame-ai-game/
+tavern-ai-game/
 ├── assets/
 │   └── images/       # Imágenes del juego
 ├── config/
-│   └── openai_config.json   # Configuración de la API
+│   ├── game_config.json    # Configuración del juego
+│   └── openai_config.json  # Configuración de la API
 ├── src/
-│   ├── abilities.py         # Sistema de ataques y efectos
-│   ├── characters.py        # Clases de personajes
-│   ├── enemies.py           # Generación de enemigos
-│   ├── engine.py            # Motor principal del juego
-│   ├── scenarios.py         # Escenarios y progresión
-│   ├── ui.py                # Interfaz de usuario
-│   └── ai/                  # Módulos de IA
+│   ├── abilities.py        # Sistema de ataques y efectos
+│   ├── characters.py       # Clases de personajes
+│   ├── enemies.py          # Generación de enemigos y jefe final
+│   ├── engine.py           # Motor principal del juego
+│   ├── menu.py             # Sistema de menús
+│   ├── scenarios.py        # Escenarios y progresión
+│   ├── tutorial.py         # Tutorial interactivo
+│   ├── ui.py               # Interfaz de usuario
+│   └── ai/                 # Módulos de IA
 │       ├── chatgpt_client.py  # Cliente para OpenAI
 │       └── decision_engine.py # Lógica de decisiones
-├── main.py                  # Punto de entrada
-└── requirements.txt         # Dependencias
+├── main.py                 # Punto de entrada
+└── requirements.txt        # Dependencias
 ```
 
 ## Integración con ChatGPT
 
-El juego utiliza la API de OpenAI para mejorar el comportamiento de los enemigos. Los enemigos evaluarán la situación de combate y tomarán decisiones estratégicas basadas en:
+El juego utiliza la API de OpenAI para potenciar el comportamiento estratégico de los enemigos. Observa cómo evalúan la situación y toman decisiones basadas en:
 
-- Salud actual del jugador y aliados
-- Ataques disponibles y sus efectos
-- Presencia de efectos de estado
-- Priorización de objetivos
+- Salud actual del jugador, curandera y otros enemigos
+- Ataques disponibles y sus efectos potenciales
+- Presencia y duración de efectos de estado activos
+- Priorización inteligente de objetivos (curandero primero)
+- Evaluación de amenazas y oportunidades tácticas
 
 Para habilitar esta función, asegúrate de:
 1. Tener una clave API válida de OpenAI
@@ -119,13 +146,19 @@ Edita characters.py para añadir nuevos ataques a personajes:
 ### Crear nuevos enemigos
 Modifica enemies.py para añadir nuevos tipos de enemigos con sus propios ataques y estadísticas.
 
+### Modificar la dificultad del jefe final
+Puedes ajustar la fórmula de cálculo de salud y daño del jefe final en la función `create_boss()` del archivo `enemies.py`.
+
 ## Créditos
-- Desarrollado con Pygame
+- Desarrollado por DarkChris
+- Creado con Pygame
 - Integración con la API de ChatGPT de OpenAI
+- Efectos visuales y sistema de partículas personalizados
 
 ## Licencia
 Este proyecto está bajo la licencia MIT.
 
 ---
 
-¡Disfruta del juego y que tus decisiones estratégicas te lleven a la victoria!
+¡Reúne tu valor, afila tu estrategia y enfrenta al Señor del Caos en Tavern AI!
+

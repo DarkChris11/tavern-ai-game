@@ -304,14 +304,14 @@ class MainMenu:
         VisualEffects.draw_particle_background(self.screen, self.time, 30)
 
         # Título del juego
-        title_size = font_large.size("Pygame AI RPG")
+        title_size = font_large.size("Tavern AI")
         title_height = title_size[1]
         title_y = self.height // 4
 
         # Efecto de título con sombra y brillo
         shadow_offset = int(1 + math.sin(self.time * 0.001))  # Velocidad reducida
-        shadow = font_large.render("Pygame AI RPG", True, (30, 30, 50))
-        title = font_large.render("Pygame AI RPG", True, COLORS["GOLD"])
+        shadow = font_large.render("Tavern AI", True, (30, 30, 50))
+        title = font_large.render("Tavern AI", True, COLORS["GOLD"])
 
         # Sombra
         self.screen.blit(
@@ -419,7 +419,7 @@ class MainMenu:
 
         # Información en la parte inferior
         info_text = font_small.render(
-            "© 2025 - Desarrollado por DarkChris Studio", True, COLORS["GRAY"]
+            "© 2025 - Desarrollado por DarkChris", True, COLORS["GRAY"]
         )
         self.screen.blit(
             info_text, (self.width // 2 - info_text.get_width() // 2, self.height - 40)
