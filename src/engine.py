@@ -32,18 +32,51 @@ COLORS = {
 
 
 class GameEngine:
-    def __init__(self, ai_client=None):
+    # def __init__(self, ai_client=None):
+    #     self.screen = screen
+    #     self.clock = pygame.time.Clock()
+    #     self.colors = COLORS
+    #     self.game_state = None
+    #     self.ai_client = ai_client
+    #     self.running = True
+    def __init__(self, screen, config=None):
+        """Constructor del motor de juego"""
         self.screen = screen
-        self.clock = pygame.time.Clock()
-        self.colors = COLORS
-        self.game_state = None
-        self.ai_client = ai_client
-        self.running = True
+        # Configuración por defecto o la proporcionada
+        self.config = config or {
+            "difficulty": "Normal",
+            "music": True,
+            "sound_effects": True,
+            "ai_model": "gpt-3.5-turbo",
+        }
 
-    def init_game(self, game_state):
-        self.game_state = game_state
-        # Configurar el tutorial como el escenario inicial
+        # Inicializar variables importantes que faltan
+        self.running = True
+        self.clock = pygame.time.Clock()
+
+        # Inicializar cliente de IA
+        self.ai_client = None
+        try:
+            from src.ai.chatgpt_client import ChatGPTClient
+
+            self.ai_client = ChatGPTClient()
+        except Exception as e:
+            print(f"Error inicializando cliente IA: {e}")
+
+        # Inicializar estado del juego
+        from src.characters import GameState
+
+        self.game_state = GameState()
+
+        # Cargar escenario inicial
+        from src.scenarios import load_scenario
+
         load_scenario(self.game_state, "tutorial")
+
+    # def init_game(self, game_state):
+    #     self.game_state = game_state
+    #     # Configurar el tutorial como el escenario inicial
+    #     load_scenario(self.game_state, "tutorial")
 
     def handle_events(self):
         """Maneja eventos de teclado y mouse"""

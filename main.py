@@ -1,49 +1,59 @@
-import os
-import sys
 import pygame
-from dotenv import load_dotenv
-
-# Agregar el directorio actual al path para encontrar los módulos
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# Cargar variables de entorno desde .env
-load_dotenv()
-
+import sys
 from src.engine import GameEngine
-from src.characters import GameState
-from src.ai.chatgpt_client import ChatGPTClient
+from src.menu import MainMenu, OptionsMenu, get_config
+from src.tutorial import Tutorial
+
+# Inicializar Pygame
+pygame.init()
+
+# Configurar pantalla
+SCREEN_WIDTH = 1024
+SCREEN_HEIGHT = 768  # Usar el mismo tamaño que en engine.py
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Pygame AI RPG")
 
 
 def main():
-    # Inicializar pygame
-    pygame.init()
+    """Función principal del juego"""
+    # Variables de estado
+    game_state = "MENU"  # MENU, PLAY, TUTORIAL, OPTIONS, QUIT
 
-    # Crear el cliente de ChatGPT
-    try:
-        ai_client = ChatGPTClient(config_path="config/openai_config.json")
-        print("ChatGPT API inicializada correctamente")
-    except Exception as e:
-        print(f"Error al inicializar ChatGPT: {e}")
-        print("El juego usará IA básica en su lugar")
-        ai_client = None
+    # Configuración
+    config = get_config()
 
-    # Crear el motor del juego
-    game_engine = GameEngine(ai_client)
+    # Bucle principal
+    running = True
+    while running:
+        if game_state == "MENU":
+            # Mostrar menú principal
+            menu = MainMenu(screen)
+            game_state = menu.run()
 
-    # Crear el estado inicial del juego
-    game_state = GameState()
+        elif game_state == "PLAY":
+            # Iniciar juego - ya no necesitamos inicializar game_state aquí
+            # porque lo hemos movido dentro del constructor de GameEngine
+            game_engine = GameEngine(screen, config)
+            victory = game_engine.run()
 
-    # Inicializar el juego
-    game_engine.init_game(game_state)
+            # Al terminar, volver al menú
+            game_state = "MENU"
 
-    # Ejecutar el bucle principal del juego
-    victory = game_engine.run()
+        elif game_state == "TUTORIAL":
+            # Mostrar tutorial
+            tutorial = Tutorial(screen)
+            game_state = tutorial.run()
 
-    # Mostrar resultado final
-    if victory:
-        print("¡Felicidades! Has completado el juego.")
-    else:
-        print("Game Over. ¡Inténtalo de nuevo!")
+        elif game_state == "OPTIONS":
+            # Mostrar opciones
+            options = OptionsMenu(screen)
+            game_state = options.run()
+
+            # Actualizar configuración
+            config = get_config()
+
+        elif game_state == "QUIT":
+            running = False
 
     # Limpiar y salir
     pygame.quit()
